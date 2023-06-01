@@ -49,8 +49,8 @@ public:
         map.erase(key);
     }
 
-    value_type get(const key_type& key) const {
-        return *map.at(key);
+    value_type get(const key_type& key) {
+        return *map[key];
     }
 
 private:

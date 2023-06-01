@@ -27,5 +27,6 @@ include_directories(
 
 if(BUILD_TEST)
     include(lrucache_unittest.cmake)
+    add_executable(lru_cache ${LC_ROOT}/test/main.cc)
 endif(BUILD_TEST)
 
