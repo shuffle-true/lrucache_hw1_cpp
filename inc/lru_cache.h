@@ -26,21 +26,24 @@ public:
     ~lru_cache() = default;
 
     status put(const key_type& key, const value_type& value) {
-        if (compute_size() >= max_size_) {
-            return status::bad;
-        }
-
         /*
          *  Ищется ключ для решения - вставить новый или обновить.
          *  Если ключ обновляется, то аллокации не происходит.
          */
         auto map_it = map.find(key);
         if (map_it != map.end()) {
+            *map_it->second = value;
             buffer.splice(buffer.end(), buffer, map_it->second);
         } else {
+            /*
+             * Проверять на размер стоит только в том случае, если мы будем аллоцировать память
+             */
+            if (compute_size() >= max_size_) {
+                return status::bad;
+            }
             buffer.push_back(value);
+            map[key] = --buffer.end();
         }
-        map[key] = --buffer.end();
         return status::ok;
     }
 
@@ -50,7 +53,13 @@ public:
     }
 
     value_type get(const key_type& key) {
-        return *map[key];
+        auto map_it = map.find(key);
+        if (map_it != map.end()) {
+            buffer.splice(buffer.end(), buffer, map_it->second);
+            return *map[key];
+        } else {
+            return value_type();
+        }
     }
 
 private:
