@@ -36,3 +36,5 @@
 
 # Build folder
 build/
+cmake/cmake-build-debug/
+.idea/
