@@ -20,51 +20,53 @@ public:
 
     enum class status { ok, bad };
 public:
-    lru_cache(size_t max_size) {
+    explicit lru_cache(size_t max_size) {
         max_size_ = max_size > 1 ? max_size : 10 * (sizeof(key_type) + sizeof(value_type));
     }
     ~lru_cache() = default;
 
     status put(const key_type& key, const value_type& value) {
+        if (compute_size(key, value) > max_size_) {
+            return status::bad;
+        }
+
         /*
-         *  Ищется ключ для решения - вставить новый или обновить.
-         *  Если ключ обновляется, то аллокации не происходит.
-         */
+         * Если ключ существует, не аллоцируем.
+         * Просто обновим последнее обращение и значение.
+        */
+
         auto map_it = map.find(key);
         if (map_it != map.end()) {
-            *map_it->second = value;
             buffer.splice(buffer.end(), buffer, map_it->second);
-        } else {
-            /*
-             * Проверять на размер стоит только в том случае, если мы будем аллоцировать память
-             */
-            if (compute_size() >= max_size_) {
-                return status::bad;
-            }
-            buffer.push_back(value);
-            map[key] = --buffer.end();
+            *map_it->second = value;
+            return status::ok;
         }
-        return status::ok;
+
+        /*
+         * Алгоритм LRU.
+         * Удаляем наиболее неиспользуемую пару ключ-значение.
+         */
+
+        if (compute_size() > max_size_) {
+//            auto last_key =
+        }
     }
 
     void erase(const key_type& key) noexcept {
-        buffer.erase(map[key]);
-        map.erase(key);
+
     }
 
     value_type get(const key_type& key) {
-        auto map_it = map.find(key);
-        if (map_it != map.end()) {
-            buffer.splice(buffer.end(), buffer, map_it->second);
-            return *map[key];
-        } else {
-            return value_type();
-        }
+
     }
 
 private:
+    size_t compute_size(const key_type& key, const value_type& value) {
+        return sizeof(value_type) * key + sizeof(key_type) * value;
+    }
+
     size_t compute_size() {
-        return sizeof(value_type) * buffer.size() + sizeof(key_type) * map.size();
+        return buffer.size() * (sizeof(value_type) + sizeof(key_type));
     }
 
     /*
