@@ -1,10 +1,10 @@
 #include <iostream>
 #include <fstream>
 #include <string>
-#include <lru_cache.h>
+#include "lru_cache.h"
 
 int main() {
-    lc::lru_cache<char, size_t> lru(-1);
+    lc::lru_cache<char, size_t> lru(4);
     lru.put('A', 1);
     lru.put('B', 1);
     lru.put('C', 1);

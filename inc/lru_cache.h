@@ -11,6 +11,8 @@
 
 namespace lc {
 
+enum class status { ok, bad };
+
 template<typename Key,
          typename Value>
 class lru_cache {
@@ -18,17 +20,14 @@ public:
     using key_type = Key;
     using value_type = Value;
 
-    enum class status { ok, bad };
 public:
     explicit lru_cache(size_t max_size) {
-        max_size_ = max_size > 1 ? max_size : 10 * (sizeof(key_type) + sizeof(value_type));
+        max_size_ = max_size;
     }
     ~lru_cache() = default;
 
     status put(const key_type& key, const value_type& value) {
-        if (compute_size(key, value) > max_size_) {
-            return status::bad;
-        }
+        // FIXME: вроде это не нужно. Никогда не сработает.
 
         /*
          * Если ключ существует, не аллоцируем.
@@ -38,7 +37,7 @@ public:
         auto map_it = map.find(key);
         if (map_it != map.end()) {
             buffer.splice(buffer.end(), buffer, map_it->second);
-            *map_it->second = value;
+            map_it->second->second = value;
             return status::ok;
         }
 
@@ -47,43 +46,47 @@ public:
          * Удаляем наиболее неиспользуемую пару ключ-значение.
          */
 
-        if (compute_size() > max_size_) {
-//            auto last_key =
+        if (buffer.size() == max_size_) {
+            auto last_key = buffer.begin()->first;
+            buffer.pop_front();
+            map.erase(last_key);
         }
+        buffer.push_back({key, value});
+        map[key] = --buffer.end();
+        return status::ok;
     }
 
     void erase(const key_type& key) noexcept {
-
+        auto map_it = map.find(key);
+        if (map_it != map.end()) {
+            buffer.erase(map_it->second);
+            map.erase(key);
+        }
     }
 
-    value_type get(const key_type& key) {
-
+    value_type get(const key_type& key) noexcept {
+        auto map_it = map.find(key);
+        if (map_it != map.end()) {
+            buffer.splice(buffer.end(), buffer, map_it->second);
+            return map_it->second->second;
+        } else {
+            return value_type();
+        }
     }
 
 private:
-    size_t compute_size(const key_type& key, const value_type& value) {
-        return sizeof(value_type) * key + sizeof(key_type) * value;
-    }
-
-    size_t compute_size() {
-        return buffer.size() * (sizeof(value_type) + sizeof(key_type));
-    }
-
     /*
-     * Deprecated
+     * Remove
      */
-    bool contains(const key_type& key) {
-        if (map.find(key) != map.end()) {
-            return true;
-        }
-        return false;
+    inline size_t compute_size(const key_type& key, const value_type& value) {
+        return sizeof(key) + sizeof(value);
     }
 
 public:
     size_t max_size_;
-    std::list<value_type> buffer;
+    std::list<std::pair<key_type, value_type>> buffer;
     std::unordered_map<key_type,
-                        typename std::list<value_type>::iterator> map;
+                        typename std::list<std::pair<key_type, value_type>>::iterator> map;
 };
 
 }

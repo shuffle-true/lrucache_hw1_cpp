@@ -12,5 +12,5 @@ endmacro()
 
 AddTest(
         common_test
-        ${LC_TEST_ROOT}/common_test.cc
+        ${LC_TEST_ROOT}/unit/common_test.cc
 )
