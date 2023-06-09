@@ -27,8 +27,6 @@ public:
     ~lru_cache() = default;
 
     status put(const key_type& key, const value_type& value) {
-        // FIXME: вроде это не нужно. Никогда не сработает.
-
         /*
          * Если ключ существует, не аллоцируем.
          * Просто обновим последнее обращение и значение.
@@ -72,14 +70,6 @@ public:
         } else {
             return value_type();
         }
-    }
-
-private:
-    /*
-     * Remove
-     */
-    inline size_t compute_size(const key_type& key, const value_type& value) {
-        return sizeof(key) + sizeof(value);
     }
 
 public:
