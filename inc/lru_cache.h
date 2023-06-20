@@ -24,7 +24,6 @@ public:
     explicit lru_cache(size_t max_size) {
         max_size_ = max_size;
     }
-    ~lru_cache() = default;
 
     status put(const key_type& key, const value_type& value) {
         /*
@@ -54,7 +53,7 @@ public:
         return status::ok;
     }
 
-    void erase(const key_type& key) noexcept {
+    void erase(const key_type& key) {
         auto map_it = map.find(key);
         if (map_it != map.end()) {
             buffer.erase(map_it->second);
@@ -62,7 +61,7 @@ public:
         }
     }
 
-    value_type get(const key_type& key) noexcept {
+    value_type get(const key_type& key) {
         auto map_it = map.find(key);
         if (map_it != map.end()) {
             buffer.splice(buffer.end(), buffer, map_it->second);
